@@ -54,8 +54,6 @@
 	  <AotAssemblies>True</AotAssemblies>
 	  <MtouchFloat32>true</MtouchFloat32>-->
 	  <MtouchInterpreter>-all,HidGlobal</MtouchInterpreter>
-	  <CodesignProvision>ReaderManagerApp AppStore</CodesignProvision>
-	  <CodesignKey>iPhone Distribution: HID Global Corporation (GJZCQ6TB82)</CodesignKey>
 	  <ArchiveOnBuild>true</ArchiveOnBuild>
 	  
 	</PropertyGroup>
@@ -91,9 +89,7 @@
 	<Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 	<PropertyGroup>
 		<DotfuscatorMSBuildDir>$(SolutionDir)/Dotfuscator.Pro.Eval.7.1.3/tools/msbuilddir</DotfuscatorMSBuildDir>
-		<!--<DotfuscatorLicense>F18D25EB3E4F4BFDB62946BC5C09CD54</DotfuscatorLicense>-->
-		<!--<DotfuscatorMSBuildDir>/Users/dhavad/Desktop/HID PACS/Demo's/MauiTestApp/Dotfuscator.Pro.Eval.7.1.3/tools/msbuilddir</DotfuscatorMSBuildDir>-->
-		<DotfuscatorLicense>F18D25EB3E4F4BFDB62946BC5C09CD54:dhanapathy.vadivelu@hidglobal.com</DotfuscatorLicense>
+		<DotfuscatorLicense>F18D25EB3E4F4BFDB62946BC5C09CD54</DotfuscatorLicense>
 		<DotfuscatorGenerateConfigFileIfMissing>True</DotfuscatorGenerateConfigFileIfMissing>
         <DotfuscatorEnabled Condition="'$(Configuration)' == 'Release'">true</DotfuscatorEnabled>
     </PropertyGroup>
