@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<!ELEMENT dotfuscatorMap (header, mapping, statistics)>
+<!ATTLIST dotfuscatorMap
+	version CDATA #REQUIRED
+>
+<!ELEMENT header (timestamp, product)>
+<!ELEMENT timestamp (#PCDATA)>
+<!ELEMENT product (#PCDATA)>
+<!ATTLIST product
+	version CDATA #REQUIRED
+	user CDATA #IMPLIED
+	serial CDATA #IMPLIED	
+>
+<!ELEMENT field (signature, name, newname?)>
+<!ELEMENT fieldlist (field*)>
+<!ELEMENT method (signature?, name, newname?)>
+<!ELEMENT methodlist (method*)>
+<!ELEMENT mapping (module*)>
+<!ELEMENT module (name, methodlist?, fieldlist?, type*)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT newname (#PCDATA)>
+<!ELEMENT signature (#PCDATA)>
+<!ELEMENT type (name, newname?, methodlist?, fieldlist?)>
+<!ELEMENT statistics (statisticline*)>
+<!ELEMENT statisticline ( description, statistic+ )>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT statistic (#PCDATA)>

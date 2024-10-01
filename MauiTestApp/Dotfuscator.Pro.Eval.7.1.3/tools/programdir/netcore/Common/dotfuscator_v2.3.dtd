@@ -1,0 +1,235 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!ELEMENT dotfuscator (propertylist?, global?, (trigger | input)?, output?, tempdir?, obfuscationattributemap?, renaming?, controlflow?, stringencrypt?, codeprotection?, removal?, linking?, premark?, signing?, eventlist?, sos?, licensing?, extattributes?, smartobfuscation?, digitalsigning?, copyfiles?)>
+<!ATTLIST dotfuscator
+	version CDATA #REQUIRED
+>
+<!ELEMENT propertylist (property)*>
+<!ELEMENT property EMPTY>
+<!ATTLIST property
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED
+>
+<!ELEMENT global (option)*>
+<!ELEMENT option (#PCDATA)>
+<!ELEMENT comment (#PCDATA)>
+<!ELEMENT trigger (filelist)>
+<!ELEMENT input (loadpaths?, (filelist | asmlist)?)>
+<!ELEMENT asmlist (package | inputassembly)*>
+<!ELEMENT filelist (file+)>
+<!ELEMENT file EMPTY>
+<!ATTLIST file
+	dir CDATA #REQUIRED
+	name CDATA #IMPLIED
+>
+<!ELEMENT package (option*, file, asmlist?, loadpaths?, file?)>
+<!ATTLIST package
+  refid CDATA #REQUIRED
+  handlername CDATA #IMPLIED
+>
+<!ELEMENT packageref EMPTY>
+<!ATTLIST packageref
+  refid CDATA #REQUIRED
+>
+<!ELEMENT assemblyref EMPTY>
+<!ATTLIST assemblyref
+  refid CDATA #REQUIRED
+>
+<!ELEMENT inputassembly (option*, file, loadpaths?, file?)>
+<!ATTLIST inputassembly
+  refid CDATA #IMPLIED
+>
+<!ELEMENT output (file)>
+<!ELEMENT tempdir (file)>
+<!ELEMENT renaming (option*, excludelist?, mapping?, referencerulelist?)>
+<!ATTLIST renaming
+	scheme (lowalpha | upperalpha | numeric | unprintable) "lowalpha"
+>
+
+<!ELEMENT excludelist (type | namespace | module | assembly)*>
+<!ELEMENT referencerulelist (referencerule)*>
+<!ELEMENT referencerule EMPTY >
+<!ATTLIST referencerule 
+  rulekey CDATA #REQUIRED
+>
+<!ELEMENT includelist (type | namespace | module | assembly)*>
+<!ELEMENT type (comment?, (method | field | propertymember | eventmember | supertype | customattribute)*)>
+<!ATTLIST type
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+	excludetype (false | true) "true"
+	speclist CDATA #IMPLIED
+	applytoderivedtypes (false | true) "false"
+>
+<!ELEMENT supertype (comment?)>
+<!ATTLIST supertype
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+>
+<!ELEMENT method (comment?, customattribute*)>
+<!ATTLIST method
+	regex (false | true) "false"
+	name CDATA #REQUIRED
+	speclist CDATA #IMPLIED
+	signature CDATA #IMPLIED
+>
+<!ELEMENT field (comment?, customattribute*)>
+<!ATTLIST field
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+	speclist CDATA #IMPLIED
+	signature CDATA #IMPLIED
+>
+<!ELEMENT propertymember (comment?, customattribute*)>
+<!ATTLIST propertymember
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+	speclist CDATA #IMPLIED
+>
+<!ELEMENT eventmember (comment?, customattribute*)>
+<!ATTLIST eventmember
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+	speclist CDATA #IMPLIED
+>
+<!ELEMENT namespace (comment?)>
+<!ATTLIST namespace
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+>
+<!ELEMENT assembly (file | assemblyref | (packageref, file))>
+<!ELEMENT module EMPTY>
+<!ATTLIST module
+	name CDATA #REQUIRED
+	assemblyname CDATA #REQUIRED
+>
+<!ELEMENT mapping (mapinput?, mapoutput?)>
+<!ELEMENT mapoutput (file, transform?)>
+<!ATTLIST mapoutput
+	overwrite (true | false) "false"
+>
+<!ELEMENT mapinput (file)>
+<!ATTLIST mapinput
+      obfuscatereferences (true | false) "true"
+>
+
+<!ELEMENT controlflow (option*, excludelist?)>
+<!ATTLIST controlflow
+	level (high | medium | low) #REQUIRED
+>
+<!ELEMENT removal (option*, triggerlist?, conditionalincludes?, removalreport?, referencerulelist?)>
+<!ELEMENT triggerlist (type | namespace | module | assembly)*>
+<!ELEMENT stringencrypt (option*, includelist?)>
+<!ELEMENT codeprotection (option*, includelist?)>
+<!ELEMENT conditionalincludes (type | namespace | module | assembly)*>
+<!ELEMENT removalreport (file, transform?)>
+<!ATTLIST removalreport
+	overwrite (true | false) "false"
+>
+<!ELEMENT transform (file?)>
+<!ELEMENT customattribute (comment?)>
+<!ATTLIST customattribute
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+	allowinheritance (false | true) "false"
+>
+<!ELEMENT signing (option*, resign?, delaysign?)>
+<!ELEMENT resign (option*, key?)>
+<!ELEMENT delaysign (option*, key?)>
+<!ELEMENT key (file | container)>
+<!ELEMENT container EMPTY>
+<!ATTLIST container
+	name CDATA #REQUIRED
+>
+<!ELEMENT obfuscationattributemap (feature+)>
+<!ELEMENT feature (#PCDATA)>
+<!ATTLIST feature
+	name CDATA #REQUIRED
+>
+<!ELEMENT loadpaths (option*, file*)>
+<!ELEMENT eventlist (event+)>
+<!ELEMENT event (option*, program+)>
+<!ATTLIST event
+	type CDATA #REQUIRED
+>
+<!ELEMENT program (file, environment)>
+<!ELEMENT environment EMPTY>
+<!ATTLIST environment
+	commandline CDATA #REQUIRED
+	workingdir CDATA #IMPLIED
+>
+<!ELEMENT linking (option*, linkedassembly*)>
+<!ELEMENT linkedassembly (option*, primaryinput, assemblylist, outputassembly)>
+<!ELEMENT primaryinput (assembly)>
+<!ELEMENT assemblylist (assembly*)>
+<!ELEMENT outputassembly (option*, entrypoint?)>
+<!ATTLIST outputassembly
+	name CDATA #REQUIRED
+>
+<!ELEMENT entrypoint (type)>
+<!ELEMENT premark (option*, assemblylist?, passphrase?, encoding?, watermark?)>
+<!ELEMENT passphrase (#PCDATA)>
+<!ELEMENT encoding EMPTY>
+<!ATTLIST encoding
+	name CDATA #REQUIRED
+>
+<!ELEMENT watermark (#PCDATA)>
+<!ELEMENT sos (option*)>
+<!ATTLIST sos
+	mergeruntime (false | true) "true"
+>
+
+<!ELEMENT licensing (option*, licensesdk?, permutation, product?, nolicenseaction, unlockingfeature)>
+<!ELEMENT licensesdk (file)>
+<!ELEMENT permutation EMPTY>
+<!ATTLIST permutation
+	name CDATA #REQUIRED
+>
+
+<!ELEMENT product EMPTY>
+<!ATTLIST product
+	name CDATA #IMPLIED
+	version CDATA #IMPLIED
+	versionmask (major | minor | build | revision) #IMPLIED
+>
+
+<!ELEMENT nolicenseaction (propertylist?)>
+<!ATTLIST nolicenseaction
+	name (custom | showactivation | none) #REQUIRED
+>
+<!ELEMENT unlockingfeature EMPTY>
+<!ATTLIST unlockingfeature
+	name CDATA #REQUIRED
+>
+
+<!ELEMENT extattributes (extattribute*)>
+<!ELEMENT extattribute (codetransformlist?, (type | assembly), propertylist?)>
+<!ATTLIST extattribute
+	name CDATA #REQUIRED
+>
+<!ELEMENT codetransformlist (codetransform*)>
+<!ELEMENT codetransform EMPTY>
+<!ATTLIST codetransform
+	name CDATA #REQUIRED
+>
+
+<!ELEMENT smartobfuscation (option*, smartobfuscationreport?)>
+<!ELEMENT smartobfuscationreport (file?)>
+<!ATTLIST smartobfuscationreport	
+	verbosity (all | warningsonly | none) "all"
+      overwrite (true | false) "false"
+>
+
+<!ELEMENT digitalsigning (option*, pfx?, timestampurl?)>
+<!ELEMENT pfx (file?)>
+<!ELEMENT timestampurl (#PCDATA)>
+<!ATTLIST pfx
+	password CDATA #REQUIRED
+>
+<!ELEMENT copyfiles (copy*)>
+<!ELEMENT copy EMPTY>
+<!ATTLIST copy
+  source CDATA #REQUIRED
+  dest CDATA #REQUIRED
+  flatten (false | true) "false"
+  recursive (false | true) "false"
+>

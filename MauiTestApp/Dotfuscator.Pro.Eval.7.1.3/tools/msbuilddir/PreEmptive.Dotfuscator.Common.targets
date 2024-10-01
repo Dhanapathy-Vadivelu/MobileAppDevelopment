@@ -1,0 +1,769 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+<!--
+  Dotfuscator integration file for MSBuild
+  Version 7.1.3
+
+  Copyright (c) 2024 PreEmptive Solutions, LLC
+  This software is licensed under the terms of the PreEmptive Solutions End User License Agreement
+  as published at <https://www.preemptive.com/eula>. You may only use this software if you accept the
+  terms and conditions of that License.
+
+  Usage instructions at <https://www.preemptive.com/dotfuscator/pro/userguide/en/interfaces_msbuild.html#targets>
+
+-->
+
+  <PropertyGroup Condition="'$(_DotfuscatorTasksSubdir)' == ''">
+    <_DotfuscatorTasksSubdir Condition="'$(MSBuildRuntimeType)' == ''">legacy</_DotfuscatorTasksSubdir>
+    <_DotfuscatorTasksSubdir Condition="'$(MSBuildRuntimeType)' == 'Full'">.</_DotfuscatorTasksSubdir>
+    <_DotfuscatorTasksSubdir Condition="'$(MSBuildRuntimeType)' == 'Core'">.</_DotfuscatorTasksSubdir>
+    <_DotfuscatorTasksSubdir Condition="'$(MSBuildRuntimeType)' == 'Mono'">.</_DotfuscatorTasksSubdir>
+    <_DotfuscatorNonTaskError Condition="'$(_DotfuscatorTasksSubdir)' == ''">Unrecognized MSBuildRuntimeType $(MSBuildRuntimeType). Dotfuscator may not be supported on this platform.</_DotfuscatorNonTaskError>
+  </PropertyGroup>
+
+  <UsingTask TaskName="PreEmptive.Tasks.Dotfuscate" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Tasks.dll"/>
+  <UsingTask TaskName="LocalizedError" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll"/>
+  <UsingTask TaskName="LocalizedWarning" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll"/>
+  <UsingTask TaskName="LocalizedMessage" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll"/>
+
+  <!--                    -->
+  <!-- General properties -->
+  <!--                    -->
+
+  <!-- Add this file to all projects so if it changes it prompts a rebuild -->
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <AssemblySearchPath_UseHintPathFromItem Condition="'$(TargetFramework)' == 'net7.0-android' OR '$(TargetFramework)' == 'net8.0-android'">true</AssemblySearchPath_UseHintPathFromItem>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(DotfuscatorEnabled)' == 'true'">
+
+      <!-- Properties for all projects -->
+      <PropertyGroup>
+
+        <PrepareForRunDependsOn>$(PrepareForRunDependsOn);Dotfuscator_Build</PrepareForRunDependsOn>
+        <BuildDependsOn>Dotfuscator_Validate;$(BuildDependsOn)</BuildDependsOn>
+        <CleanDependsOn>$(CleanDependsOn);Dotfuscator_Clean</CleanDependsOn>
+        <GenerateManifestsDependsOn>Dotfuscator_Update;$(GenerateManifestsDependsOn)</GenerateManifestsDependsOn>
+
+        <Dotfuscator_Validate_BeforeTargets>$(Dotfuscator_Validate_BeforeTargets);BeforeBuild;Build;Dotfuscator_Build</Dotfuscator_Validate_BeforeTargets>
+        <Dotfuscator_Update_BeforeTargets>$(Dotfuscator_Update_BeforeTargets);GetTargetPath;CopyFilesToOutputDirectory</Dotfuscator_Update_BeforeTargets>
+        <Dotfuscator_Update_DependsOn>$(Dotfuscator_Update_DependsOn);Dotfuscator_Protect;_Dotfuscator_UpdateBuildData</Dotfuscator_Update_DependsOn>
+        <Dotfuscator_Update_AfterTargets>$(Dotfuscator_Update_AfterTargets)</Dotfuscator_Update_AfterTargets>
+
+        <_Dotfuscator_UpdateBuildData_DependsOn Condition="'$(Prep_ComputeProcessXamlFilesDependsOn)' != ''">$(_Dotfuscator_UpdateBuildData_DependsOn);Prep_ComputeProcessXamlFiles</_Dotfuscator_UpdateBuildData_DependsOn>
+        <_Dotfuscator_UpdateBuildData_DependsOn Condition="'$(PrepareForRazorCompileDependsOn)' != ''">$(_Dotfuscator_UpdateBuildData_DependsOn);PrepareForRazorCompile</_Dotfuscator_UpdateBuildData_DependsOn>
+        <_Dotfuscator_UpdateBuildData_DependsOn Condition="'$(TargetPlatformIdentifier)' == 'UAP'">$(_Dotfuscator_UpdateBuildData_DependsOn);GetPackagingOutputs</_Dotfuscator_UpdateBuildData_DependsOn>
+
+        <_DotfuscatorDebugImportance>low</_DotfuscatorDebugImportance>
+
+
+        <_DotfuscatorFinalOutputDir>$(OutputPath.TrimEnd('\').TrimEnd('/'))</_DotfuscatorFinalOutputDir>
+
+        <_DotfuscatorIntermediateDir>$(IntermediateOutputPath)Dotfuscator</_DotfuscatorIntermediateDir>
+        <_DotfuscatorOutputDirName>dfout</_DotfuscatorOutputDirName>
+        <_DotfuscatorOutputDir>$(_DotfuscatorIntermediateDir)\$(_DotfuscatorOutputDirName)</_DotfuscatorOutputDir>
+        <_DotfuscatorOutputDir Condition="'$([System.IO.Path]::IsPathRooted($(_DotfuscatorOutputDir)))' == 'False'">$(MSBuildProjectDirectory)\$(_DotfuscatorOutputDir)</_DotfuscatorOutputDir>
+        <_DotfuscatorRunTargets>_Dotfuscator_Run</_DotfuscatorRunTargets>
+        <_DotfuscatorDependenciesMapFileName>$(_DotfuscatorIntermediateDir)\dfDependenciesMap.xml</_DotfuscatorDependenciesMapFileName>
+        <DotfuscatorSolutionDir>$(SolutionDir)</DotfuscatorSolutionDir>
+      </PropertyGroup>
+
+      <PropertyGroup Condition="'$(UseDotNetNativeToolchain)' == 'true'">
+        <Dotfuscator_Protect_BeforeTargets>$(Dotfuscator_Protect_BeforeTargets);ComputeIlcParameters</Dotfuscator_Protect_BeforeTargets>
+        <Dotfuscator_Update_BeforeTargets>$(Dotfuscator_Update_BeforeTargets);ComputeIlcParameters</Dotfuscator_Update_BeforeTargets>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' Or $(DotfuscatorUsePlatformSpecificConfig) != 'true'">
+    <DotfuscatorConfigPath Condition="'$(DotfuscatorConfigPath)' == ''">$(MSBuildProjectDirectory)\DotfuscatorConfig.xml</DotfuscatorConfigPath>
+    <DotfuscatorPlatform Condition="'$(DotfuscatorPlatform)' == ''">$(TargetFrameworkIdentifier)</DotfuscatorPlatform>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' != '' And $(DotfuscatorUsePlatformSpecificConfig) == 'true'">
+    <DotfuscatorConfigPath Condition="'$(DotfuscatorConfigPath)' == ''">$(MSBuildProjectDirectory)\DotfuscatorConfig_$(TargetPlatformIdentifier).xml</DotfuscatorConfigPath>
+    <DotfuscatorPlatform Condition="'$(DotfuscatorPlatform)' == ''">$(TargetFrameworkIdentifier)</DotfuscatorPlatform>
+  </PropertyGroup>
+
+
+<!-- Visual Studio has a bug with FastUpToDateCheck for legacy F# projects.
+     It fails to call MSBuild when DotfuscatorConfig.xml changes.
+     Disable FastUpToDateCheck in this case.
+
+     see: https://developercommunity.visualstudio.com/content/problem/344761/f-fast-up-to-date-check-ignores.html
+-->
+  <Choose>
+    <When Condition="'$(Language)' == 'F#' And '$(_FSharpEnableFUTD)' != 'true' And '$(DotfuscatorEnabled)' == 'true'">
+      <PropertyGroup>
+        <DisableFastUpToDateCheck>True</DisableFastUpToDateCheck>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <ItemGroup>
+    <None Include="$(DotfuscatorConfigPath)">
+      <Visible>true</Visible>
+    </None>
+    <UpToDateCheckInput Include="$(DotfuscatorConfigPath)"/>
+  </ItemGroup>
+
+  <Choose>
+    <When Condition="'$(_DotfuscatorAIMSetting)' == ''">
+      <PropertyGroup>
+        <_DotfuscatorAIMSetting>automatic</_DotfuscatorAIMSetting>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="'$(SolutionDir)' == '' Or $(SolutionDir) == '*Undefined*'">
+      <PropertyGroup>
+        <DotfuscatorSolutionDir>$(MSBuildProjectDirectory)</DotfuscatorSolutionDir>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <Target Name="Dotfuscator_Clean">
+
+    <RemoveDir
+      Directories="$(_DotfuscatorIntermediateDir)"/>
+
+  </Target>
+
+
+  <Target Name="Dotfuscator_Validate"
+          BeforeTargets="$(Dotfuscator_Validate_BeforeTargets)">
+    <!--                      -->
+    <!-- Pre-build validation -->
+    <!--                      -->
+
+    <!-- If we don't know which task DLL to use, we have to report that error without the task to localize the message -->
+    <Error Condition="'$(_DotfuscatorNonTaskError)' != ''"
+           Text="$(_DotfuscatorNonTaskError)" />
+
+    <!-- Set some properties for conditionals -->
+
+    <!-- State of the Config File and if we should generate -->
+    <PropertyGroup Condition="Exists('$(DotfuscatorConfigPath)')">
+      <_DotfuscatorGenConfig>Exists</_DotfuscatorGenConfig>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="!Exists('$(DotfuscatorConfigPath)') And '$(DotfuscatorGenerateConfigFileIfMissing)' != 'false'">
+      <_DotfuscatorGenConfig>MissingCreate</_DotfuscatorGenConfig>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="!Exists('$(DotfuscatorConfigPath)') And '$(DotfuscatorGenerateConfigFileIfMissing)' == 'false'">
+      <_DotfuscatorGenConfig>MissingError</_DotfuscatorGenConfig>
+    </PropertyGroup>
+
+    <!-- These items determine what to do with a missing config file (create new? error?). -->
+
+    <!-- Config file doesn't exist, and we're explicitly told to not create one -->
+    <PropertyGroup Condition="'$(_DotfuscatorGenConfig)' == 'MissingError'">
+      <_DotfuscatorRunTargets>assertion_failure</_DotfuscatorRunTargets>
+      <_DotfuscatorValidationError>MISSING_CONFIG</_DotfuscatorValidationError>
+      <_DotfuscatorValidationErrorArgs>$(DotfuscatorConfigPath)</_DotfuscatorValidationErrorArgs>
+    </PropertyGroup>
+
+    <!-- Config file doesn't exist, and we should create one -->
+    <PropertyGroup Condition="'$(_DotfuscatorGenConfig)' == 'MissingCreate'">
+      <_DotfuscatorRunTargets>_Dotfuscator_GenConfig;_Dotfuscator_Run</_DotfuscatorRunTargets>
+    </PropertyGroup>
+
+    <LocalizedError Condition="'$(_DotfuscatorValidationError)' != ''"
+       ResourceName="$(_DotfuscatorValidationError)"
+       FormatParameters="$(_DotfuscatorValidationErrorArgs)"
+       File="$(MSBuildProjectFile)"/>
+
+  </Target>
+
+
+  <!--               -->
+  <!-- Prepare phase -->
+  <!--               -->
+
+  <!-- Determines what assemblies should be used for the Dotfuscator input list.
+         This is used for both generating the initial config file and when obfuscating.
+         During obfuscation the config file will be updated with the latest inputs to allow the gui to edit the config. -->
+
+  <UsingTask TaskName="ProcessProjects" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll"/>
+  <UsingTask TaskName="ReadDependenciesMap" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll"/>
+
+  <Target Name="Dotfuscator_Prepare">
+
+    <!--
+      Update FileWrites with input assembly/PDB files, as once we run Dotfuscator we'll be changing these items
+      to point to the protected versions. We still want the "clean cache" to know about these input files, however,
+      so that it doesn't remove them.
+    -->
+    <PropertyGroup>
+      <_DebugSymbolsProduced Condition="!Exists('@(_DebugSymbolsIntermediatePath)')">false</_DebugSymbolsProduced>
+    </PropertyGroup>
+    <ItemGroup>
+      <FileWrites Include="@(IntermediateAssembly)" Condition="Exists('@(IntermediateAssembly)')"/>
+      <FileWrites Include="@(_DebugSymbolsIntermediatePath)" Condition="'$(_DebugSymbolsProduced)'=='true'"/>
+    </ItemGroup>
+
+    <!-- Get an item set of files that were copied to the bin directory. -->
+    <ItemGroup>
+
+        <!-- Mimic _CopyFilesMarkedCopyLocal. -->
+        <_DotfuscatorOriginalFiles Include="@(ReferenceCopyLocalPaths)">
+            <Destination>%(ReferenceCopyLocalPaths.DestinationSubDirectory)%(ReferenceCopyLocalPaths.Filename)%(ReferenceCopyLocalPaths.Extension)</Destination>
+        </_DotfuscatorOriginalFiles>
+
+        <!-- Mimic _CopyOutOfDateSourceItemsToOutputDirectory. -->
+        <_DotfuscatorOriginalFiles Include="@(_SourceItemsToCopyToOutputDirectory)">
+            <Destination>%(_SourceItemsToCopyToOutputDirectory.TargetPath)</Destination>
+        </_DotfuscatorOriginalFiles>
+
+        <!-- Mimic _CopyOutOfDateSourceItemsToOutputDirectoryAlways. -->
+        <_DotfuscatorOriginalFiles Include="@(_SourceItemsToCopyToOutputDirectoryAlways)">
+            <Destination>%(_SourceItemsToCopyToOutputDirectoryAlways.TargetPath)</Destination>
+        </_DotfuscatorOriginalFiles>
+
+        <!-- Mimic _CopyAppConfigFile. -->
+        <_DotfuscatorOriginalFiles Include="@(AppConfigWithTargetPath)">
+            <Destination>%(AppConfigWithTargetPath.TargetPath)</Destination>
+        </_DotfuscatorOriginalFiles>
+
+        <!-- Mimic _CopyManifestFiles. -->
+        <_DotfuscatorOriginalFiles Include="@(ApplicationManifest)"
+                                   Condition="'$(GenerateClickOnceManifests)'=='true' or '$(_DeploymentCopyApplicationManifest)'=='true'">
+            <Destination>%(ApplicationManifest.Filename)%(ApplicationManifest.Extension)</Destination>
+        </_DotfuscatorOriginalFiles>
+        <_DotfuscatorOriginalFiles Include="@(DeployManifest)"
+                                   Condition="'$(GenerateClickOnceManifests)'=='true'">
+            <Destination>%(DeployManifest.Filename)%(DeployManifest.Extension)</Destination>
+        </_DotfuscatorOriginalFiles>
+
+        <!-- Mimic CopyFilesToOutputDirectory itself. -->
+        <_DotfuscatorOriginalFiles Include="@(IntermediateAssembly)">
+            <Destination>%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)</Destination>
+        </_DotfuscatorOriginalFiles>
+        <_DotfuscatorOriginalFiles Include="@(AddModules)"
+                                   Condition="'@(AddModules)' != ''">
+            <Destination>%(AddModules.Filename)%(AddModules.Extension)</Destination>
+        </_DotfuscatorOriginalFiles>
+        <_DotfuscatorOriginalFiles Include="$(IntermediateOutputPath)$(_SGenDllName)"
+                                   Condition="'$(_SGenDllCreated)'=='true'">
+            <Destination>$(_SGenDllName)</Destination>
+        </_DotfuscatorOriginalFiles>
+        <_DotfuscatorOriginalFiles Include="@(_DebugSymbolsIntermediatePath)"
+                                   Condition="'$(_DebugSymbolsProduced)'=='true' and '$(SkipCopyingSymbolsToOutputDirectory)' != 'true'">
+            <Destination>%(_DebugSymbolsIntermediatePath.Filename)%(_DebugSymbolsIntermediatePath.Extension)</Destination>
+        </_DotfuscatorOriginalFiles>
+        <!-- Don't bother mimicing XML documentation file copy. -->
+        <_DotfuscatorOriginalFiles Include="@(IntermediateSatelliteAssembliesWithTargetPath)"
+                                   Condition="'@(IntermediateSatelliteAssembliesWithTargetPath)' != ''">
+            <Destination>%(IntermediateSatelliteAssembliesWithTargetPath.Culture)\$(TargetName).resources.dll</Destination>
+        </_DotfuscatorOriginalFiles>
+        <!-- Don't bother mimicing COM file copy. -->
+        <_DotfuscatorOriginalFiles Include="@(WinMDExpArtifacts)"
+                                   Condition="'$(SkipCopyWinMDArtifact)' != 'true' and '@(WinMDExpArtifacts)' != ''">
+            <Destination>%(WinMDExpArtifacts.Filename)%(WinMDExpArtifacts.Extension)</Destination>
+        </_DotfuscatorOriginalFiles>
+        <!-- MDB files will be generated in the _DotfuscatorFinalOutputDir after we finish building. -->
+
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Then, take those files and set them up with their paths for the rest of the Dotfuscator part of the pipeline. -->
+      <_DotfuscatorFiles Include="@(_DotfuscatorOriginalFiles)">
+        <Original>%(_DotfuscatorOriginalFiles.Identity)</Original>
+        <DfOutput>$(_DotfuscatorOutputDir)\%(_DotfuscatorOriginalFiles.Destination)</DfOutput>
+        <Final>$(_DotfuscatorFinalOutputDir)\%(_DotfuscatorOriginalFiles.Destination)</Final>
+        <FinalAbsolute>$([System.IO.Path]::GetFullPath('$(_DotfuscatorFinalOutputDir)'))\%(_DotfuscatorOriginalFiles.Destination)</FinalAbsolute>
+        <FilenameAndExtension>%(Filename)%(Extension)</FilenameAndExtension>
+        <RelativePath>%(_DotfuscatorOriginalFiles.Destination)</RelativePath>
+      </_DotfuscatorFiles>
+    </ItemGroup>
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text="Files seen by Dotfuscator integration: " />
+
+    <Message
+        Importance="$(_DotfuscatorDebugImportance)"
+        Text=" '%(_DotfuscatorFiles.Original)' >> '%(_DotfuscatorFiles.Final)'" />
+
+    <PropertyGroup>
+      <!-- UWP apps and ASP.NET on MSBuild 4.0 seem to write this file more agressively, so don't include it. -->
+      <AdditionalDotfuscatorTriggerFiles Condition="'$(TargetPlatformIdentifier)' != 'UAP' And !('$(MSBuildToolsVersion)' == '4.0' And '$(Microsoft_Web_Publishing_MSDeploy_Common_targets_Imported)' != '')">
+        $(AdditionalDotfuscatorTriggerFiles);$(ResolveAssemblyReferencesStateFile)
+      </AdditionalDotfuscatorTriggerFiles>
+    </PropertyGroup>
+
+    <ProcessProjects
+        DotfuscatorDebugImportance="$(_DotfuscatorDebugImportance)"
+        ConfigPath="$(DotfuscatorConfigPath)"
+        DotfuscatorFiles="@(_DotfuscatorFiles)"
+        ProjectFile="$(MSBuildProjectFullPath)"
+        Configuration="$(Configuration)"
+        Platform="$(Platform)"
+        SolutionDir="$(DotfuscatorSolutionDir)"
+        CurrentSolutionConfigurations="$(CurrentSolutionConfigurationContents)">
+      <Output TaskParameter="DiscoveredAssemblies" ItemName="_DotfuscatorConfigInputs" />
+    </ProcessProjects>
+
+    <ReadDependenciesMap
+        MapPath="$(_DotfuscatorDependenciesMapFileName)" >
+      <Output TaskParameter="Entries" ItemName="_DotfuscatorDependenciesMapEntries" />
+    </ReadDependenciesMap>
+
+  </Target>
+
+  <!--               -->
+  <!-- Protect phase -->
+  <!--               -->
+
+  <UsingTask TaskName="WriteDependenciesMap" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll"/>
+
+  <Target Name="_Dotfuscator_Run"
+          DependsOnTargets="Dotfuscator_Prepare">
+
+    <LocalizedMessage Importance="high" ResourceName="RUNNING_DOTFUSCATOR" FormatParameters="$(DotfuscatorConfigPath)"/>
+
+    <PropertyGroup>
+      <_DotfuscatorBuildSystemOutputPath>$(OutputPath)</_DotfuscatorBuildSystemOutputPath>
+      <_DotfuscatorBuildSystemOutputPath Condition="'$([System.IO.Path]::IsPathRooted($(_DotfuscatorBuildSystemOutputPath)))' == 'False'">$(MSBuildProjectDirectory)\$(_DotfuscatorBuildSystemOutputPath)</_DotfuscatorBuildSystemOutputPath>
+      <_DotfuscatorTaskProperties>
+        $(_DotfuscatorTaskProperties)
+        <configuration>$(Configuration)</configuration>
+        <platform>$(Platform)</platform>
+        <dotfuscatorplatform>$(DotfuscatorPlatform)</dotfuscatorplatform>
+        <androidsigningcertfingerprint>$(DotfuscatorAndroidSigningCertFingerprint)</androidsigningcertfingerprint>
+        <dotfuscatorbuildsystemoutputpath>$(_DotfuscatorBuildSystemOutputPath)</dotfuscatorbuildsystemoutputpath>
+      </_DotfuscatorTaskProperties>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_DotfuscatorConfigInputsOnly)' == 'true'">
+      <_DotfuscatorConfigInputs Remove='@(_DotfuscatorConfigInputs)'/>
+    </ItemGroup>
+
+    <!-- Gather all the directories where referenced assemblies are stored to ensure Dotfuscator can find them all -->
+    <RemoveDuplicates
+      Inputs="@(ReferencePath->'%(RootDir)%(Directory)');@(ReferenceDependencyPaths->'%(RootDir)%(Directory)')">
+      <Output TaskParameter="Filtered" ItemName="_DotfuscatorReferencedAssemblyDirectories"/>
+    </RemoveDuplicates>
+
+    <Dotfuscate
+      ConfigPath="$(DotfuscatorConfigPath)"
+      Properties="$(_DotfuscatorTaskProperties)"
+      InputAssemblies="@(_DotfuscatorConfigInputs)"
+      UserDefinedLoadPaths="@(_DotfuscatorReferencedAssemblyDirectories)"
+      InputManagement="$(_DotfuscatorAIMSetting)"
+      OutputDirectory="$(_DotfuscatorOutputDir)"
+      License="$(DotfuscatorLicense)"
+      DotfuscatorResponsePath="$(_DotfuscatorIntermediateDir)">
+
+      <Output TaskParameter="MarkupFiles" ItemName="_DotfuscatorMarkupFiles" />
+      <Output TaskParameter="OutputAssembliesInternal" ItemName="_DotfuscatorOutputAssemblies" />
+      <Output TaskParameter="Pdbs" ItemName="_DotfuscatorPdbs" />
+    </Dotfuscate>
+
+    <LocalizedMessage Importance="high" ResourceName="FINISHED_DOTFUSCATOR" />
+
+    <WriteDependenciesMap
+      MapPath="$(_DotfuscatorDependenciesMapFileName)"
+      MarkupFiles="@(_DotfuscatorMarkupFiles)"
+      OutputAssemblies="@(_DotfuscatorOutputAssemblies)"
+      Pdbs="@(_DotfuscatorPdbs)">
+    </WriteDependenciesMap>
+
+    <ItemGroup>
+      <_DotfuscatorDependenciesMapEntries Remove="@(_DotfuscatorDependenciesMapEntries)" />
+    </ItemGroup>
+
+    <ReadDependenciesMap
+        MapPath="$(_DotfuscatorDependenciesMapFileName)" >
+      <Output TaskParameter="Entries" ItemName="_DotfuscatorDependenciesMapEntries" />
+    </ReadDependenciesMap>
+
+  </Target>
+
+  <UsingTask TaskName="PreEmptive.Tasks.GenConfig" AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Tasks.dll"/>
+
+  <Target Name="_Dotfuscator_GenConfig"
+          DependsOnTargets="Dotfuscator_Prepare">
+
+    <LocalizedMessage Importance="high" ResourceName="GENERATING_CONFIG" />
+    <GenConfig
+      ConfigPath="$(DotfuscatorConfigPath)"
+      License="$(DotfuscatorLicense)"
+      DotfuscatorResponsePath="$(_DotfuscatorIntermediateDir)"/>
+
+    <LocalizedWarning ResourceName="CONFIG_GENERATED_WARNING" FormatParameters="$(DotfuscatorConfigPath)"
+             File="$(MSBuildProjectFile)"/>
+
+  </Target>
+
+
+  <Target Name="Dotfuscator_Protect"
+          DependsOnTargets="Dotfuscator_Prepare"
+          AfterTargets="$(Dotfuscator_Protect_AfterTargets)"
+          BeforeTargets="$(Dotfuscator_Protect_BeforeTargets)"
+          Inputs="@(_DotfuscatorFiles -> '%(Original)');$(DotfuscatorConfigPath);$(AdditionalDotfuscatorTriggerFiles);@(_DotfuscatorDependenciesMapEntries -> '%(OriginalItemSpec)')"
+          Outputs="@(_DotfuscatorDependenciesMapEntries -> '%(Identity)');$(_DotfuscatorDependenciesMapFileName)">
+
+    <Message
+      Importance="$(_DotfuscatorDebugImportance)"
+      Text="Removing any prior Dotfuscator outputs..."/>
+    <RemoveDir
+      Directories="$(_DotfuscatorOutputDir)"/>
+
+    <!-- Call appropriate run strategy for Dotfuscator. -->
+    <CallTarget
+      Targets="$(_DotfuscatorRunTargets)"/>
+
+  </Target>
+
+
+  <!--              -->
+  <!-- Update phase -->
+  <!--              -->
+
+  <UsingTask TaskName="UpdateDataFromDotfuscator"
+             AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll">
+  </UsingTask>
+
+  <Target Name="_Dotfuscator_UpdateBuildData"
+          DependsOnTargets="$(_Dotfuscator_UpdateBuildData_DependsOn)">
+
+    <UpdateDataFromDotfuscator
+      DotfuscatorDebugImportance="$(_DotfuscatorDebugImportance)"
+      DotfuscatorDependenciesMapEntries="@(_DotfuscatorDependenciesMapEntries)"
+      OutDir="$(OutDir)"
+
+      OldBuiltProjectOutputGroupKeyOutput="@(BuiltProjectOutputGroupKeyOutput)"
+      OldCandidateNETStandardReferences="@(_CandidateNETStandardReferences)"
+      OldXACandidateNETStandardReferences="@(_XACandidateNETStandardReferences)"
+      OldXICandidateNETStandardReferences="@(XI_CandidateNETStandardReferences)"
+      OldCoreCompileCache="@(CoreCompileCache)"
+      OldReferenceCopyLocalPaths="@(ReferenceCopyLocalPaths)"
+      OldReferenceDependencyPaths="@(ReferenceDependencyPaths)"
+      OldReferencePath="@(ReferencePath)"
+      OldReferencePathNames="@(_ReferencePath_Names)"
+      OldReferencePathWithRefAssemblies="@(ReferencePathWithRefAssemblies)"
+      OldReferenceRelatedPaths="@(_ReferenceRelatedPaths)"
+      OldResolveAssemblyReferenceResolvedFiles="@(_ResolveAssemblyReferenceResolvedFiles)"
+      OldResolvedProjectReferencePaths="@(_ResolvedProjectReferencePaths)"
+      OldDebugSymbolsIntermediatePath="@(_DebugSymbolsIntermediatePath)"
+      OldDebugSymbolsProjectOutputGroupOutput="@(DebugSymbolsProjectOutputGroupOutput)"
+      OldXamlReferencesToCompile="@(XamlReferencesToCompile)"
+      OldGeneratedXamlSrc="@(GeneratedXamlSrc)"
+      OldGeneratedXamlFiles="@(_GeneratedXamlFiles)"
+      OldGeneratedXbfFiles="@(_GeneratedXbfFiles)"
+      OldDeploymentManifestEntryPoint="@(_DeploymentManifestEntryPoint)"
+      OldPackagingOutputs="@(PackagingOutputs)"
+      Old_PackagingOutputsExpanded="@(_PackagingOutputsExpanded)"
+      Old_PackagingOutputsUnexpanded="@(_PackagingOutputsUnexpanded)"
+      Old_PackagingOutputsFromOtherProjects="@(_PackagingOutputsFromOtherProjects)"
+      Old_PackagingOutputsOutsideLayout="@(_PackagingOutputsOutsideLayout)"
+      Old_BuiltProjectOutputGroupOutputIntermediate="@(_BuiltProjectOutputGroupOutputIntermediate)"
+      OldBuiltProjectOutputGroupOutput="@(BuiltProjectOutputGroupOutput)"
+      OldCopyLocalFilesOutputGroupOutput="@(CopyLocalFilesOutputGroupOutput)"
+      Old_BuiltProjectOutputGroupOutput="@(_BuiltProjectOutputGroupOutput)"
+      Old_DebugSymbolsProjectOutputGroupOutput="@(_DebugSymbolsProjectOutputGroupOutput)"
+      Old_CopyLocalFilesOutputGroupOutput="@(_CopyLocalFilesOutputGroupOutput)"
+      Old_CopyLocalFilesOutputGroupOutputFromReferences="@(_CopyLocalFilesOutputGroupOutputFromReferences)"
+      Old_CopyLocalFilesOutputGroupOutputTargetPath="@(_CopyLocalFilesOutputGroupOutputTargetPath)"
+      OldPriFilesOutputGroupOutput="@(PriFilesOutputGroupOutput)"
+      Old_PriFilesOutputGroupOutput="@(_PriFilesOutputGroupOutput)"
+      Old_PriFilesToExpandFromReference="@(_PriFilesToExpandFromReference)"
+      OldPathsToExcludeFromLayoutOutputGroup="@(PathsToExcludeFromLayoutOutputGroup)"
+      OldCiaResolvedAssembliesDestinationFiles="@(_CIAResolvedAssembliesDestinationFiles)"
+      OldCleanPriorFileWritesDeleted="@(_CleanPriorFileWritesDeleted)"
+      OldCleanPriorFileWritesInIntermediate="@(_CleanPriorFileWritesInIntermediate)"
+      OldCopyPdbFilesLinkerFiles="@(_CopyPdbFilesLinkerFiles)"
+      OldFilteredAssemblies="@(FilteredAssemblies)"
+      OldReferenceDependencyPathsWithUnderscore="@(_ReferenceDependencyPaths)"
+      OldReferencePathWithUnderScore="@(_ReferencePath)"
+      OldResolvedAssemblies="@(ResolvedAssemblies)"
+      OldResolvedAssembliesWithUnderscore="@(_ResolvedAssemblies)"
+      OldResolvedSymbols="@(ResolvedSymbols)"
+      OldResolvedUserAssemblies="@(ResolvedUserAssemblies)"
+      OldResolvedUserAssembliesWithUnderscore="@(_ResolvedUserAssemblies)"
+      OldResolvedPortablePdbFiles="@(_ResolvedPortablePdbFiles)"
+      OldXamarinCandidateNETStandardReferences="@(_Xamarin_CandidateNETStandardReferences)"
+      OldRazorReferencePath="@(RazorReferencePath)">
+
+      <Output TaskParameter="NewBuiltProjectOutputGroupKeyOutput" ItemName="_Dotfuscator_New_BuiltProjectOutputGroupKeyOutput" />
+      <Output TaskParameter="NewCandidateNETStandardReferences" ItemName="_Dotfuscator_New_CandidateNETStandardReferences" />
+      <Output TaskParameter="NewXACandidateNETStandardReferences" ItemName="_Dotfuscator_New_XACandidateNETStandardReferences" />
+      <Output TaskParameter="NewXICandidateNETStandardReferences" ItemName="_Dotfuscator_New_XI_CandidateNETStandardReferences" />
+      <Output TaskParameter="NewCoreCompileCache" ItemName="_Dotfuscator_New_CoreCompileCache" />
+      <Output TaskParameter="NewReferenceCopyLocalPaths" ItemName="_Dotfuscator_New_ReferenceCopyLocalPaths" />
+      <Output TaskParameter="NewReferenceDependencyPaths" ItemName="_Dotfuscator_New_ReferenceDependencyPaths" />
+      <Output TaskParameter="NewReferencePath" ItemName="_Dotfuscator_New_ReferencePath" />
+      <Output TaskParameter="NewReferencePathNames" ItemName="_Dotfuscator_New_ReferencePathNames" />
+      <Output TaskParameter="NewReferencePathWithRefAssemblies" ItemName="_Dotfuscator_New_ReferencePathWithRefAssemblies" />
+      <Output TaskParameter="NewReferenceRelatedPaths" ItemName="_Dotfuscator_New_ReferenceRelatedPaths" />
+      <Output TaskParameter="NewResolveAssemblyReferenceResolvedFiles" ItemName="_Dotfuscator_New_ResolveAssemblyReferenceResolvedFiles" />
+      <Output TaskParameter="NewResolvedProjectReferencePaths" ItemName="_Dotfuscator_New_ResolvedProjectReferencePaths" />
+      <Output TaskParameter="NewDebugSymbolsIntermediatePath" ItemName="_Dotfuscator_New_DebugSymbolsIntermediatePath"/>
+      <Output TaskParameter="NewDebugSymbolsProjectOutputGroupOutput" ItemName="_Dotfuscator_New_DebugSymbolsProjectOutputGroupOutput"/>
+      <Output TaskParameter="NewXamlReferencesToCompile" ItemName="_Dotfuscator_New_XamlReferencesToCompile"/>
+      <Output TaskParameter="NewGeneratedXamlSrc" ItemName="_Dotfuscator_New_GeneratedXamlSrc" />
+      <Output TaskParameter="NewGeneratedXamlFiles" ItemName="_Dotfuscator_New_GeneratedXamlFiles" />
+      <Output TaskParameter="NewGeneratedXbfFiles" ItemName="_Dotfuscator_New_GeneratedXbfFiles" />
+      <Output TaskParameter="NewDeploymentManifestEntryPoint" ItemName="_Dotfuscator_New_DeploymentManifestEntryPoint" />
+      <Output TaskParameter="NewPackagingOutputs" ItemName="_Dotfuscator_New_PackagingOutputs" />
+      <Output TaskParameter="New_PackagingOutputsExpanded" ItemName="_Dotfuscator_New__PackagingOutputsExpanded" />
+      <Output TaskParameter="New_PackagingOutputsUnexpanded" ItemName="_Dotfuscator_New__PackagingOutputsUnexpanded" />
+      <Output TaskParameter="New_PackagingOutputsFromOtherProjects" ItemName="_Dotfuscator_New__PackagingOutputsFromOtherProjects" />
+      <Output TaskParameter="New_PackagingOutputsOutsideLayout" ItemName="_Dotfuscator_New__PackagingOutputsOutsideLayout" />
+      <Output TaskParameter="New_BuiltProjectOutputGroupOutputIntermediate" ItemName="_Dotfuscator_New__BuiltProjectOutputGroupOutputIntermediate" />
+      <Output TaskParameter="NewBuiltProjectOutputGroupOutput" ItemName="_Dotfuscator_New_BuiltProjectOutputGroupOutput" />
+      <Output TaskParameter="NewCopyLocalFilesOutputGroupOutput" ItemName="_Dotfuscator_New_CopyLocalFilesOutputGroupOutput" />
+      <Output TaskParameter="New_BuiltProjectOutputGroupOutput" ItemName="_Dotfuscator_New__BuiltProjectOutputGroupOutput" />
+      <Output TaskParameter="New_DebugSymbolsProjectOutputGroupOutput" ItemName="_Dotfuscator_New__DebugSymbolsProjectOutputGroupOutput" />
+      <Output TaskParameter="New_CopyLocalFilesOutputGroupOutput" ItemName="_Dotfuscator_New__CopyLocalFilesOutputGroupOutput" />
+      <Output TaskParameter="New_CopyLocalFilesOutputGroupOutputFromReferences" ItemName="_Dotfuscator_New__CopyLocalFilesOutputGroupOutputFromReferences" />
+      <Output TaskParameter="New_CopyLocalFilesOutputGroupOutputTargetPath" ItemName="_Dotfuscator_New__CopyLocalFilesOutputGroupOutputTargetPath" />
+      <Output TaskParameter="NewPriFilesOutputGroupOutput" ItemName="_Dotfuscator_New_PriFilesOutputGroupOutput" />
+      <Output TaskParameter="New_PriFilesOutputGroupOutput" ItemName="_Dotfuscator_New__PriFilesOutputGroupOutput" />
+      <Output TaskParameter="New_PriFilesToExpandFromReference" ItemName="_Dotfuscator_New__PriFilesToExpandFromReference" />
+      <Output TaskParameter="NewPathsToExcludeFromLayoutOutputGroup" ItemName="_Dotfuscator_New_PathsToExcludeFromLayoutOutputGroup" />
+      <Output TaskParameter="NewCiaResolvedAssembliesDestinationFiles" ItemName="_Dotfuscator_New_CiaResolvedAssembliesDestinationFiles" />
+      <Output TaskParameter="NewCleanPriorFileWritesDeleted" ItemName="_Dotfuscator_New_CleanPriorFileWritesDeleted" />
+      <Output TaskParameter="NewCleanPriorFileWritesInIntermediate" ItemName="_Dotfuscator_New_CleanPriorFileWritesInIntermediate" />
+      <Output TaskParameter="NewCopyPdbFilesLinkerFiles" ItemName="_Dotfuscator_New_CopyPdbFilesLinkerFiles" />
+      <Output TaskParameter="NewFilteredAssemblies" ItemName="_Dotfuscator_New_FilteredAssemblies" />
+      <Output TaskParameter="NewReferenceDependencyPathsWithUnderscore" ItemName="_Dotfuscator_New_ReferenceDependencyPathsWithUnderscore" />
+      <Output TaskParameter="NewReferencePathWithUnderscore" ItemName="_Dotfuscator_New_ReferencePathWithUnderscore" />
+      <Output TaskParameter="NewResolvedAssemblies" ItemName="_Dotfuscator_New_ResolvedAssemblies" />
+      <Output TaskParameter="NewResolvedAssembliesWithUnderscore" ItemName="_Dotfuscator_New_ResolvedAssembliesWithUnderscore" />
+      <Output TaskParameter="NewResolvedSymbols" ItemName="_Dotfuscator_New_ResolveAssemblyReferenceResolvedFiles" />
+      <Output TaskParameter="NewResolvedUserAssemblies" ItemName="_Dotfuscator_New_ResolvedUserAssemblies" />
+      <Output TaskParameter="NewResolvedUserAssembliesWithUnderscore" ItemName="_Dotfuscator_New_ResolvedPortablePdbFiles" />
+      <Output TaskParameter="NewResolvedPortablePdbFiles" ItemName="_Dotfuscator_New_ResolveAssemblyReferenceResolvedFiles" />
+      <Output TaskParameter="NewRazorReferencePath" ItemName="_Dotfuscator_New_RazorReferencePath" />
+      <Output TaskParameter="NewXamarinCandidateNETStandardReferences" ItemName="_Dotfuscator_New_XamarinCandidateNETStandardReferences" />
+    </UpdateDataFromDotfuscator>
+
+    <ItemGroup>
+      <BuiltProjectOutputGroupKeyOutput Remove="@(BuiltProjectOutputGroupKeyOutput)"/>
+      <BuiltProjectOutputGroupKeyOutput Include="@(_Dotfuscator_New_BuiltProjectOutputGroupKeyOutput)"/>
+      <_CandidateNETStandardReferences Remove="@(_CandidateNETStandardReferences)"/>
+      <_CandidateNETStandardReferences Include="@(_Dotfuscator_New_CandidateNETStandardReferences)"/>
+      <_XACandidateNETStandardReferences Remove="@(_XACandidateNETStandardReferences)"/>
+      <_XACandidateNETStandardReferences Include="@(_Dotfuscator_New_XACandidateNETStandardReferences)"/>
+      <XI_CandidateNETStandardReferences Remove="@(XI_CandidateNETStandardReferences)"/>
+      <XI_CandidateNETStandardReferences Include="@(_Dotfuscator_New_XI_CandidateNETStandardReferences)"/>
+      <CoreCompileCache Remove="@(CoreCompileCache)"/>
+      <CoreCompileCache Include="@(_Dotfuscator_New_CoreCompileCache)"/>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"/>
+      <ReferenceCopyLocalPaths Include="@(_Dotfuscator_New_ReferenceCopyLocalPaths)"/>
+      <ReferenceDependencyPaths Remove="@(ReferenceDependencyPaths)"/>
+      <ReferenceDependencyPaths Include="@(_Dotfuscator_New_ReferenceDependencyPaths)"/>
+      <ReferencePath Remove="@(ReferencePath)"/>
+      <ReferencePath Include="@(_Dotfuscator_New_ReferencePath)"/>
+      <_ReferencePath_Names Remove="@(_ReferencePath_Names)"/>
+      <_ReferencePath_Names Include="@(_Dotfuscator_New_ReferencePathNames)"/>
+      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)"/>
+      <ReferencePathWithRefAssemblies Include="@(_Dotfuscator_New_ReferencePathWithRefAssemblies)"/>
+      <_ReferenceRelatedPaths Remove="@(_ReferenceRelatedPaths)"/>
+      <_ReferenceRelatedPaths Include="@(_Dotfuscator_New_ReferenceRelatedPaths)"/>
+      <_ResolveAssemblyReferenceResolvedFiles Remove="@(_ResolveAssemblyReferenceResolvedFiles)"/>
+      <_ResolveAssemblyReferenceResolvedFiles Include="@(_Dotfuscator_New_ResolveAssemblyReferenceResolvedFiles)"/>
+      <_ResolvedProjectReferencePaths Remove="@(_ResolvedProjectReferencePaths)"/>
+      <_ResolvedProjectReferencePaths Include="@(_Dotfuscator_New_ResolvedProjectReferencePaths)"/>
+      <_DebugSymbolsIntermediatePath Remove="@(_DebugSymbolsIntermediatePath)"/>
+      <_DebugSymbolsIntermediatePath Include="@(_Dotfuscator_New_DebugSymbolsIntermediatePath)"/>
+      <DebugSymbolsProjectOutputGroupOutput Remove="@(DebugSymbolsProjectOutputGroupOutput)"/>
+      <DebugSymbolsProjectOutputGroupOutput Include="@(_Dotfuscator_New_DebugSymbolsProjectOutputGroupOutput)"/>
+      <XamlReferencesToCompile Remove="@(XamlReferencesToCompile)" />
+      <XamlReferencesToCompile Include="@(_Dotfuscator_New_XamlReferencesToCompile)" />
+      <GeneratedXamlSrc Remove="@(GeneratedXamlSrc)"/>
+      <GeneratedXamlSrc Include="@(_Dotfuscator_New_GeneratedXamlSrc)"/>
+      <_GeneratedXamlFiles Remove="@(_GeneratedXamlFiles)"/>
+      <_GeneratedXamlFiles Include="@(_Dotfuscator_New_GeneratedXamlFiles)"/>
+      <_GeneratedXbfFiles Remove="@(_GeneratedXbfFiles)"/>
+      <_GeneratedXbfFiles Include="@(_Dotfuscator_New_GeneratedXbfFiles)"/>
+      <_DeploymentManifestEntryPoint Remove="@(_DeploymentManifestEntryPoint)" />
+      <_DeploymentManifestEntryPoint Include="@(_Dotfuscator_New_DeploymentManifestEntryPoint)" />
+      <PackagingOutputs Remove="@(PackagingOutputs)" />
+      <PackagingOutputs Include="@(_Dotfuscator_New_PackagingOutputs)" />
+      <_PackagingOutputsExpanded Remove="@(_PackagingOutputsExpanded)" />
+      <_PackagingOutputsExpanded Include="@(_Dotfuscator_New__PackagingOutputsExpanded)" />
+      <_PackagingOutputsUnexpanded Remove="@(_PackagingOutputsUnexpanded)" />
+      <_PackagingOutputsUnexpanded Include="@(_Dotfuscator_New__PackagingOutputsUnexpanded)" />
+      <_PackagingOutputsFromOtherProjects Remove="@(_PackagingOutputsFromOtherProjects)" />
+      <_PackagingOutputsFromOtherProjects Include="@(_Dotfuscator_New__PackagingOutputsFromOtherProjects)" />
+      <_PackagingOutputsOutsideLayout Remove="@(_PackagingOutputsOutsideLayout)" />
+      <_PackagingOutputsOutsideLayout Include="@(_Dotfuscator_New__PackagingOutputsOutsideLayout)" />
+      <_BuiltProjectOutputGroupOutputIntermediate Remove="@(_BuiltProjectOutputGroupOutputIntermediate)" />
+      <_BuiltProjectOutputGroupOutputIntermediate Include="@(_Dotfuscator_New__BuiltProjectOutputGroupOutputIntermediate)" />
+      <BuiltProjectOutputGroupOutput Remove="@(BuiltProjectOutputGroupOutput)" />
+      <BuiltProjectOutputGroupOutput Include="@(_Dotfuscator_New_BuiltProjectOutputGroupOutput)" />
+      <CopyLocalFilesOutputGroupOutput Remove="@(CopyLocalFilesOutputGroupOutput)" />
+      <CopyLocalFilesOutputGroupOutput Include="@(_Dotfuscator_New_CopyLocalFilesOutputGroupOutput)" />
+      <_BuiltProjectOutputGroupOutput Remove="@(_BuiltProjectOutputGroupOutput)" />
+      <_BuiltProjectOutputGroupOutput Include="@(_Dotfuscator_New__BuiltProjectOutputGroupOutput)" />
+      <_DebugSymbolsProjectOutputGroupOutput Remove="@(_DebugSymbolsProjectOutputGroupOutput)" />
+      <_DebugSymbolsProjectOutputGroupOutput Include="@(_Dotfuscator_New__DebugSymbolsProjectOutputGroupOutput)" />
+      <_CopyLocalFilesOutputGroupOutput Remove="@(_CopyLocalFilesOutputGroupOutput)" />
+      <_CopyLocalFilesOutputGroupOutput Include="@(_Dotfuscator_New__CopyLocalFilesOutputGroupOutput)" />
+      <_CopyLocalFilesOutputGroupOutputFromReferences Remove="@(_CopyLocalFilesOutputGroupOutputFromReferences)" />
+      <_CopyLocalFilesOutputGroupOutputFromReferences Include="@(_Dotfuscator_New__CopyLocalFilesOutputGroupOutputFromReferences)" />
+      <_CopyLocalFilesOutputGroupOutputTargetPath Remove="@(_CopyLocalFilesOutputGroupOutputTargetPath)" />
+      <_CopyLocalFilesOutputGroupOutputTargetPath Include="@(_Dotfuscator_New__CopyLocalFilesOutputGroupOutputTargetPath)" />
+      <PriFilesOutputGroupOutput Remove="@(PriFilesOutputGroupOutput)" />
+      <PriFilesOutputGroupOutput Include="@(_Dotfuscator_New_PriFilesOutputGroupOutput)" />
+      <_PriFilesOutputGroupOutput Remove="@(_PriFilesOutputGroupOutput)" />
+      <_PriFilesOutputGroupOutput Include="@(_Dotfuscator_New__PriFilesOutputGroupOutput)" />
+      <_PriFilesToExpandFromReference Remove="@(_PriFilesToExpandFromReference)" />
+      <_PriFilesToExpandFromReference Include="@(_Dotfuscator_New__PriFilesToExpandFromReference)" />
+      <PathsToExcludeFromLayoutOutputGroup Remove="@(PathsToExcludeFromLayoutOutputGroup)" />
+      <PathsToExcludeFromLayoutOutputGroup Include="@(_Dotfuscator_New_PathsToExcludeFromLayoutOutputGroup)" />
+      <_CIAResolvedAssembliesDestinationFiles Remove="@(_CIAResolvedAssembliesDestinationFiles)"/>
+      <_CIAResolvedAssembliesDestinationFiles Include="@(_Dotfuscator_New_CiaResolvedAssembliesDestinationFiles)"/>
+      <_CleanPriorFileWritesDeleted Remove="@(_CleanPriorFileWritesDeleted)"/>
+      <_CleanPriorFileWritesDeleted Include="@(_Dotfuscator_New_CleanPriorFileWritesDeleted)"/>
+      <_CleanPriorFileWritesInIntermediate Remove="@(_CleanPriorFileWritesInIntermediate)"/>
+      <_CleanPriorFileWritesInIntermediate Include="@(_Dotfuscator_New_CleanPriorFileWritesInIntermediate)"/>
+      <_CopyPdbFilesLinkerFiles Remove="@(_CopyPdbFilesLinkerFiles)"/>
+      <_CopyPdbFilesLinkerFiles Include="@(_Dotfuscator_New_CopyPdbFilesLinkerFiles)"/>
+      <FilteredAssemblies Remove="@(FilteredAssemblies)"/>
+      <FilteredAssemblies Include="@(_Dotfuscator_New_FilteredAssemblies)"/>
+      <_ReferenceDependencyPaths Remove="@(_ReferenceDependencyPaths)"/>
+      <_ReferenceDependencyPaths Include="@(_Dotfuscator_New_ReferenceDependencyPathsWithUnderscore)"/>
+      <_ReferencePath Remove="@(_ReferencePath)"/>
+      <_ReferencePath Include="@(_Dotfuscator_New_ReferencePathWithUnderscore)"/>
+      <ResolvedAssemblies Remove="@(ResolvedAssemblies)"/>
+      <ResolvedAssemblies Include="@(_Dotfuscator_New_ResolvedAssemblies)"/>
+      <_ResolvedAssemblies Remove="@(_ResolvedAssemblies)"/>
+      <_ResolvedAssemblies Include="@(_Dotfuscator_New_ResolvedAssembliesWithUnderscore)"/>
+      <ResolvedSymbols Remove="@(ResolvedSymbols)"/>
+      <ResolvedSymbols Include="@(_Dotfuscator_New_ResolvedSymbols)"/>
+      <ResolvedUserAssemblies Remove="@(ResolvedUserAssemblies)"/>
+      <ResolvedUserAssemblies Include="@(_Dotfuscator_New_ResolvedUserAssemblies)"/>
+      <_ResolvedUserAssemblies Remove="@(_ResolvedUserAssemblies)"/>
+      <_ResolvedUserAssemblies Include="@(_Dotfuscator_New_ResolvedUserAssembliesWithUnderscore)"/>
+      <_ResolvedPortablePdbFiles Remove="@(_ResolvedPortablePdbFiles)"/>
+      <_ResolvedPortablePdbFiles Include="@(_Dotfuscator_New_ResolvedPortablePdbFiles)"/>
+      <RazorReferencePath Remove="@(RazorReferencePath)" />
+      <RazorReferencePath Include="@(_Dotfuscator_New_RazorReferencePath)" />
+      <_Xamarin_CandidateNETStandardReferences Remove="@(_Xamarin_CandidateNETStandardReferences)"/>
+      <_Xamarin_CandidateNETStandardReferences Include="@(_Dotfuscator_New_XamarinCandidateNETStandardReferences)"/>
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="CreateReferences" BeforeTargets="ResolveAssemblyReferences" Condition="'$(TargetFramework)' == 'net7.0-android' OR '$(TargetFramework)' == 'net8.0-android'">
+    <ItemGroup>
+      <Reference Include="@(ProjectReference->'%(Filename)')">
+        <HintPath>$(MSBuildProjectDirectory)\$(OutputPath)%(Filename).dll</HintPath>
+      </Reference>
+    </ItemGroup>
+    <Message Text="Establishing Reference Paths: $(MSBuildProjectDirectory)\$(OutputPath)%(ProjectReference.Filename)" Importance="high" />
+  </Target>
+
+  <!-- Joins the Dotfuscator files set (_DotfuscatorFiles) against an item set,
+       then provides an updated version of the latter set. -->
+  <UsingTask TaskName="UpdateItemsTask"
+             AssemblyFile="$(_DotfuscatorTasksSubdir)\PreEmptive.Dotfuscator.Internal.Tasks.dll">
+  </UsingTask>
+
+  <Target Name="Dotfuscator_Update"
+          DependsOnTargets="$(Dotfuscator_Update_DependsOn)"
+          AfterTargets="$(Dotfuscator_Update_AfterTargets)"
+          BeforeTargets="$(Dotfuscator_Update_BeforeTargets)">
+
+    <ItemGroup>
+      <_DotfuscatorOutputItems Include="$(_DotfuscatorOutputDir)\*.*" Exclude="@(_DotfuscatorOutputItems)" />
+    </ItemGroup>
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text="Updating IntermediateSatelliteAssembliesWithTargetPath item to reflect protected Dotfuscator files..."/>
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text=" Before: @(IntermediateSatelliteAssembliesWithTargetPath)"/>
+
+    <ItemGroup>
+      <_DotfuscatorNewItems Remove="@(_DotfuscatorNewItems)" />
+    </ItemGroup>
+
+    <UpdateItemsTask
+        DotfuscatorDebugImportance="$(_DotfuscatorDebugImportance)"
+        DotfuscatorFiles="@(_DotfuscatorFiles)"
+        OldItemSet="@(IntermediateSatelliteAssembliesWithTargetPath)"
+        MatchOnFileMetadataKeys="Directory;Filename;Extension"
+        MatchOnItemMetadataKeys="Directory;Filename;Extension"
+        NewItemIdentityFromFileMetadataKeys="DfOutput">
+      <Output TaskParameter="NewItemList" ItemName="_DotfuscatorNewItems" />
+    </UpdateItemsTask>
+
+    <ItemGroup>
+      <IntermediateSatelliteAssembliesWithTargetPath Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
+      <IntermediateSatelliteAssembliesWithTargetPath Include="@(_DotfuscatorNewItems)" />
+    </ItemGroup>
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text=" After: @(IntermediateSatelliteAssembliesWithTargetPath)"/>
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text="Updating ReferenceSatellitePaths item to reflect protected Dotfuscator files..." />
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text=" Before: @(ReferenceSatellitePaths)" />
+
+    <ItemGroup>
+      <_DotfuscatorNewItems Remove="@(_DotfuscatorNewItems)" />
+    </ItemGroup>
+
+    <UpdateItemsTask
+        DotfuscatorDebugImportance="$(_DotfuscatorDebugImportance)"
+        DotfuscatorFiles="@(_DotfuscatorFiles)"
+        OldItemSet="@(ReferenceSatellitePaths)"
+        MatchOnFileMetadataKeys="Directory;Filename;Extension"
+        MatchOnItemMetadataKeys="Directory;Filename;Extension"
+        NewItemIdentityFromFileMetadataKeys="DfOutput">
+      <Output TaskParameter="NewItemList" ItemName="_DotfuscatorNewItems" />
+    </UpdateItemsTask>
+
+    <ItemGroup>
+      <ReferenceSatellitePaths Remove="@(ReferenceSatellitePaths)" />
+      <ReferenceSatellitePaths Include="@(_DotfuscatorNewItems)" />
+    </ItemGroup>
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text=" After: @(ReferenceSatellitePaths)" />
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text="Updating IntermediateAssembly item to reflect protected Dotfuscator files..." />
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text=" Before: @(IntermediateAssembly)" />
+
+    <ItemGroup>
+      <_DotfuscatorNewItems Remove="@(_DotfuscatorNewItems)" />
+    </ItemGroup>
+
+    <UpdateItemsTask
+        DotfuscatorDebugImportance="$(_DotfuscatorDebugImportance)"
+        DotfuscatorFiles="@(_DotfuscatorOutputItems)"
+        OldItemSet="@(IntermediateAssembly)"
+        MatchOnFileMetadataKeys="Filename;Extension"
+        MatchOnItemMetadataKeys="Filename;Extension"
+        NewItemIdentityFromFileMetadataKeys="Identity">
+      <Output TaskParameter="NewItemList" ItemName="_DotfuscatorNewItems" />
+    </UpdateItemsTask>
+
+    <ItemGroup>
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+      <IntermediateAssembly Include="@(_DotfuscatorNewItems)" />
+    </ItemGroup>
+
+    <Message Importance="$(_DotfuscatorDebugImportance)"
+             Text=" After: @(IntermediateAssembly)" />
+
+  </Target>
+
+  <Target Name="Dotfuscator_Build"
+          DependsOnTargets="Dotfuscator_Validate;
+                            Dotfuscator_Update"/>
+
+</Project>

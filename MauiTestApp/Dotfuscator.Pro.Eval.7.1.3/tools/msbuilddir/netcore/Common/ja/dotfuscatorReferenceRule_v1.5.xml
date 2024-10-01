@@ -1,0 +1,178 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE dotfuscatorreferencerules SYSTEM "http://www.preemptive.com/dotfuscator/dtd/dotfuscatorReferenceRule_v1.1.dtd">
+<dotfuscatorreferencerules>
+  <referencerule rulekey="{F4074361-D4CE-4e40-B907-BA9668A45996}"
+                 ruleisdefault="false"
+                 name="WCF コントラクト オブジェクト">
+    <comment>OperationContract、ServiceContract、DataContract、または DataMember 属性で修飾された型およびメンバーが除去されないようにします。</comment>
+    <triggerlist>
+      <type name=".*"
+            regex="true">
+        <customattribute name="System\.ServiceModel\.ServiceContractAttribute"
+                         regex="true"
+                         allowinheritance="true" />
+        <customattribute name="System\.Runtime\.Serialization\.DataContractAttribute"
+                         regex="true" />
+        <method name=".*"
+                regex="true">
+          <customattribute name="System\.ServiceModel\.OperationContractAttribute"
+                           regex="true" />
+        </method>
+        <field name="Field"
+               regex="true">
+          <customattribute name="System\.Runtime\.Serialization\.DataMemberAttribute"
+                           regex="true" />
+        </field>
+        <propertymember name=".*"
+                        regex="true">
+          <customattribute name="System\.Runtime\.Serialization\.DataMemberAttribute"
+                           regex="true" />
+        </propertymember>
+      </type>
+    </triggerlist>
+  </referencerule>
+  <referencerule rulekey="{6655B10A-FD58-462d-8D4F-5B1316DFF0FF}"
+                 ruleisdefault="true"
+                 name="自動生成された ResourceManager">
+    <comment>Visual Studio によって自動生成されるリソース クラスを除外します。これはリフレクションを使用して、文字列値で指定されたクラスの名前を基に ResourceManager のインスタンスを作成します。</comment>
+    <excludelist>
+      <type name=".*[(Properties)(My)]\.Resources"
+            regex="true" />
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{7D9C8B02-2383-420f-8740-A9760394C2C1}"
+                 ruleisdefault="true"
+                 name="シリアル化可能とマークされた型とフィールド">
+    <comment>シリアル化可能な型をすべて除外します。これはまた、すべてのシリアル化可能なフィールドを名前の変更対象から除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true"
+            speclist="+serializable">
+        <comment>シリアル化可能な型をすべて除外します。これはまた、すべてのシリアル化可能なフィールドを名前の変更対象から除外します。</comment>
+        <field name=".*"
+               speclist="-notserialized"
+               regex="true" />
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{229FD6F8-5BCC-427b-8F72-A7A413ECDF1A}"
+                 ruleisdefault="true"
+                 name="System.Web.Services 属性を持つ型">
+    <comment>System.Web.Services 名前空間の属性で修飾されたすべての型を除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true">
+        <comment>System.Web.Services 名前空間の属性で修飾されたすべての型を除外します。</comment>
+        <customattribute name="System.Web.Services.*"
+                         regex="true" />
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{2B7E7C8C-A39A-4db8-9DFC-6AFD38509061}"
+                 ruleisdefault="true"
+                 name="System.Web.Services 属性を持つメソッド">
+    <comment>System.Web.Services 名前空間の属性で修飾されたすべてのメソッドを除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true"
+            excludetype="false">
+        <comment>System.Web.Services 名前空間の属性で修飾されたすべてのメソッドを除外します。</comment>
+        <method name=".*"
+                regex="true">
+          <customattribute name="System.Web.Services.*"
+                           regex="true" />
+        </method>
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{D97286EB-CF80-4ae8-94D4-E90131E6D0D7}"
+                 ruleisdefault="false"
+                 name="AccessedThroughPropertyAttribute を持つフィールド">
+    <comment>System.Runtime.CompilerServices 名前空間の AccessedThroughPropertyAttribute で修飾されたフィールドを除外します。Visual Basic では、アクセス可能なあらゆる WithEvents プロパティには、この属性を持つプライベート フィールドが含まれています。この属性はほかのアセンブリからリフレクションを使って調べられることがあるため、コンパイル中に除去されません。したがって、この規則はライブラリ モードでのみ使用する必要があります。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true"
+            excludetype="false">
+        <comment>System.Runtime.CompilerServices 名前空間の AccessedThroughPropertyAttribute で修飾されたフィールドを除外します。Visual Basic では、アクセス可能なあらゆる WithEvents プロパティには、この属性を持つプライベート フィールドが含まれています。この属性はほかのアセンブリからリフレクションを使って調べられることがあるため、コンパイル中に除去されません。したがって、この規則はライブラリ モードでのみ使用する必要があります。</comment>
+        <field name=".*"
+               regex="true">
+          <customattribute name="System\.Runtime\.CompilerServices\.AccessedThroughPropertyAttribute"
+                           regex="true" />
+        </field>
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{494EA3BA-B947-44B5-BEE8-A11CC85AAF9B}"
+                 ruleisdefault="true"
+                 name="Silverlight および WPF UserControls のフィールド">
+    <comment>System.Windows.Controls.UserControl のスーパータイプを持つ型のすべてのフィールドを除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true"
+            excludetype="false">
+        <field name=".*"
+               regex="true" />
+        <supertype name="System.Windows.Controls.UserControl" />
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{AB89403F-5E08-4adf-8386-6D34AF0ADBD3}"
+                 ruleisdefault="false"
+                 name="CrystalReport ReportClass オブジェクト">
+    <comment>CrystalDecisions.CrystalReports.Engine.ReportClass のスーパータイプを持つすべての型を除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true">
+        <comment>CrystalDecisions.CrystalReports.Engine.ReportClass のスーパータイプを持つすべての型を除外します。</comment>
+        <supertype name="CrystalDecisions\.CrystalReports\.Engine\.ReportClass"
+                   regex="true" />
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{89769974-93E9-4e71-8D92-BE70E855ACFC}"
+                 ruleisdefault="true"
+                 name="自動生成された Application 設定">
+    <comment>System.Configuration.ApplicationSettingsBase のスーパータイプを持つすべての型を除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true">
+        <supertype name="System\.Configuration\.ApplicationSettingsBase"
+                   regex="true" />
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{6f022A59-3AD6-4C69-8D9B-6870B9B9E362}"
+                 ruleisdefault="false"
+                 name="Windows ワークフロー アクティビティ">
+    <comment>System.Workflow.ComponentModel.Activity のスーパータイプを持つすべての型を除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true">
+        <supertype name=".*Activity"
+                   regex="true" />
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{4D81E604-A545-4631-8B6D-C3735F793F80}"
+                 ruleisdefault="true"
+                 name="Windows Phone のスケジュールされたタスク エージェント">
+    <comment>Microsoft.Phone.Scheduler.ScheduledTaskAgent のスーパータイプを持つすべての型を除外します。</comment>
+    <excludelist>
+      <type name=".*"
+            regex="true">
+        <supertype name="Microsoft.Phone.Scheduler.ScheduledTaskAgent" />
+      </type>
+    </excludelist>
+  </referencerule>
+  <referencerule rulekey="{62bd3899-7d53-4336-8ca2-4e5dbae187d5}"
+                 ruleisdefault="true"
+                 name="CompilerGenerated 属性を持つ匿名型のプロパティ">
+    <comment>System.Runtime.CompilerServices.CompilerGenerated 属性を持つ匿名型のすべてのプロパティを除外します</comment>
+    <excludelist>
+     <type name=".*AnonymousType.*" regex="true" excludetype="false">
+        <customattribute name="System\.Runtime\.CompilerServices\.CompilerGeneratedAttribute" regex="true" />
+        <propertymember name="*" regex="true" />
+      </type>
+    </excludelist>
+  </referencerule>
+</dotfuscatorreferencerules>
