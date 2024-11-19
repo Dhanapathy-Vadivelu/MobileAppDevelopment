@@ -5,6 +5,7 @@
   <global>
     <input_management>automatic</input_management>
     <option>monocompat</option>
+    <option>nodotfuscatorattribute</option>
     <option>debugauto</option>
   </global>
   <input>
@@ -12,19 +13,18 @@
       <file dir="${configdir}/bin/Release/net8.0-android" />
       <file dir="${configdir}/bin/Debug/net8.0-android" />
       <file dir="${configdir}/bin/Debug/net8.0-ios/iossimulator-x64" />
+      <file dir="${configdir}/bin/Release/net8.0-ios/ios-arm64" />
     </loadpaths>
     <asmlist>
       <inputassembly refid="f9080392-3abf-4272-875e-8021d42e012a">
         <option>honoroas</option>
         <option>stripoa</option>
-        <option>library</option>
         <option>transformxaml</option>
-        <file dir="${configdir}\obj\Release\net8.0-android" name="MauiTestApp.dll" />
+        <file dir="${configdir}\obj\Release\net8.0-ios\ios-arm64" name="MauiTestApp.dll" />
       </inputassembly>
       <inputassembly refid="3ec3f71d-e0ee-474d-b319-eacc8c858462">
         <option>honoroas</option>
         <option>stripoa</option>
-        <option>library</option>
         <option>transformxaml</option>
         <file dir="${configdir}\..\Library.Services\bin\Release\net8.0" name="Library.Services.dll" />
       </inputassembly>
@@ -57,11 +57,11 @@
       <assembly>
         <file dir="" name="Library.Services.dll" />
       </assembly>
-	  <type name="MauiTestApp.ConfigHelper" />
-     </includelist>
+      <type name="MauiTestApp.ConfigHelper" />
+    </includelist>
   </stringencrypt>
   <removal>
-    <option>disable</option>
+    <option>constonly</option>
     <removalreport overwrite="true">
       <file dir="${configdir}\DotfuscatorReports\${configuration}\${platform}" name="Removal.xml" />
     </removalreport>

@@ -91,7 +91,8 @@
 		<DotfuscatorMSBuildDir>../Dotfuscator.Pro.Eval.7.1.3/tools/msbuilddir</DotfuscatorMSBuildDir>
 		<DotfuscatorLicense>F18D25EB3E4F4BFDB62946BC5C09CD54</DotfuscatorLicense>
 		<DotfuscatorGenerateConfigFileIfMissing>True</DotfuscatorGenerateConfigFileIfMissing>
-        <DotfuscatorEnabled Condition="'$(Configuration)' == 'Release'">true</DotfuscatorEnabled>
+		<!--<DotfuscatorUsePlatformSpecificConfig>true</DotfuscatorUsePlatformSpecificConfig>-->
+          <DotfuscatorEnabled Condition="'$(Configuration)' == 'Release'">true</DotfuscatorEnabled>
     </PropertyGroup>
 	
 
