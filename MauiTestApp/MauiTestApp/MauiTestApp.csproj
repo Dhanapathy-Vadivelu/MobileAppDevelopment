@@ -92,6 +92,7 @@
 		<DotfuscatorLicense>F18D25EB3E4F4BFDB62946BC5C09CD54</DotfuscatorLicense>
 		<DotfuscatorGenerateConfigFileIfMissing>True</DotfuscatorGenerateConfigFileIfMissing>
 		<!--<DotfuscatorUsePlatformSpecificConfig>true</DotfuscatorUsePlatformSpecificConfig>-->
+		<DotfuscatorAndroidSigningCertFingerprint>17:F8:31:55:B2:F9:E9:60:AA:01:0E:CA:99:0D:7A:86:98:ED:45:63</DotfuscatorAndroidSigningCertFingerprint>
           <DotfuscatorEnabled Condition="'$(Configuration)' == 'Release'">true</DotfuscatorEnabled>
     </PropertyGroup>
 	

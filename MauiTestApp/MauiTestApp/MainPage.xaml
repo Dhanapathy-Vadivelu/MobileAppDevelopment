@@ -30,6 +30,19 @@
                 SemanticProperties.Hint="Counts the number of times you click"
                 Clicked="OnCounterClicked"
                 HorizontalOptions="Fill" />
+
+            <Button
+                x:Name="RootBtn"
+                Text="Root Check"
+                SemanticProperties.Hint="Root check Triggered"
+                Clicked="OnRootClicked"
+                HorizontalOptions="Fill" /> 
+            <Button
+                x:Name="TamperBtn"
+                Text="Tamper Check"
+                SemanticProperties.Hint="Tamper check Triggered"
+                Clicked="OnTamperClicked"
+                HorizontalOptions="Fill" /> 
         </VerticalStackLayout>
     </ScrollView>
 

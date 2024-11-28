@@ -20,10 +20,21 @@ public partial class MainPage : ContentPage
         if (count == 1)
 			CounterBtn.Text = $"Clicked {count} time";
 		else
-			CounterBtn.Text = $"Clicked {count} times{TestService.constMonth}";
+			CounterBtn.Text = $"Clicked {count} times";
 
 		SemanticScreenReader.Announce(CounterBtn.Text);
 	}
+
+    private void OnRootClicked(object sender, EventArgs e)
+	{
+		RootBtn.Text = $"Root Check Triggered";
+        SemanticScreenReader.Announce(RootBtn.Text);
+    }
+    private void OnTamperClicked(object sender, EventArgs e)
+    {
+        TamperBtn.Text = $"Tamper Check Triggered";
+        SemanticScreenReader.Announce(TamperBtn.Text);
+    }
 }
 
 
