@@ -88,10 +88,11 @@
 	
 	<Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 	<PropertyGroup>
-		<DotfuscatorMSBuildDir>../Dotfuscator.Pro.Eval.7.1.3/tools/msbuilddir</DotfuscatorMSBuildDir>
-		<DotfuscatorLicense>F18D25EB3E4F4BFDB62946BC5C09CD54</DotfuscatorLicense>
+		<!-- <DotfuscatorMSBuildDir>../Dotfuscator.Pro.Eval.7.1.3/tools/msbuilddir</DotfuscatorMSBuildDir> -->
+		<DotfuscatorMSBuildDir>../Dotfuscator.Pro.Eval.7.2.0/tools/msbuilddir</DotfuscatorMSBuildDir>
+		<DotfuscatorLicense>F18D25EB3E4F4BFDB62946BC5C09CD54:devuser.license@mailinator.com</DotfuscatorLicense>
 		<DotfuscatorGenerateConfigFileIfMissing>True</DotfuscatorGenerateConfigFileIfMissing>
-		<!--<DotfuscatorUsePlatformSpecificConfig>true</DotfuscatorUsePlatformSpecificConfig>-->
+		<DotfuscatorUsePlatformSpecificConfig>true</DotfuscatorUsePlatformSpecificConfig>
 		<DotfuscatorAndroidSigningCertFingerprint>17:F8:31:55:B2:F9:E9:60:AA:01:0E:CA:99:0D:7A:86:98:ED:45:63</DotfuscatorAndroidSigningCertFingerprint>
           <DotfuscatorEnabled Condition="'$(Configuration)' == 'Release'">true</DotfuscatorEnabled>
     </PropertyGroup>

@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!ELEMENT dotfuscator (propertylist?, global?, trigger?, output?, tempdir?, renaming?, controlflow?, stringencrypt?, removal?)>
+<!ATTLIST dotfuscator
+	version CDATA #REQUIRED
+>
+<!ELEMENT propertylist (property)*>
+<!ELEMENT property EMPTY>
+<!ATTLIST property
+	name CDATA #REQUIRED
+	value CDATA #REQUIRED
+>
+<!ELEMENT global (option)*>
+<!ELEMENT option (#PCDATA)>
+<!ELEMENT trigger (filelist)>
+<!ELEMENT filelist (file+)>
+<!ELEMENT file EMPTY>
+<!ATTLIST file
+	dir CDATA #REQUIRED
+	name CDATA #IMPLIED
+>
+<!ELEMENT output (file)>
+<!ELEMENT tempdir (file)>
+<!ELEMENT renaming (option*, excludelist?, mapping?)>
+<!ATTLIST renaming
+	scheme (lowalpha | upperalpha | numeric | unprintable)  "lowalpha"
+>
+<!ELEMENT excludelist (type | namespace | module | assembly)*>
+<!ELEMENT includelist (type | namespace | module | assembly)*>
+<!ELEMENT type (method | field)*>
+<!ATTLIST type
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+	excludetype (false | true) "true"
+	speclist CDATA #IMPLIED
+>
+<!ELEMENT method EMPTY>
+<!ATTLIST method
+	regex (false | true) "false"
+	name CDATA #REQUIRED
+	speclist CDATA #IMPLIED
+	signature CDATA #IMPLIED
+>
+<!ELEMENT field EMPTY>
+<!ATTLIST field
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+	speclist CDATA #IMPLIED
+>
+<!ELEMENT namespace EMPTY>
+<!ATTLIST namespace
+	name CDATA #REQUIRED
+	regex (false | true) "false"
+>
+<!ELEMENT assembly (file)>
+<!ELEMENT module EMPTY>
+<!ATTLIST module
+	name CDATA #REQUIRED
+	assemblyname CDATA #REQUIRED
+>
+<!ELEMENT mapping (mapinput?, mapoutput?)>
+<!ELEMENT mapoutput (file)>
+<!ATTLIST mapoutput
+	overwrite (true | false) "false"
+>
+<!ELEMENT mapinput (file)>
+<!ELEMENT controlflow (option*, excludelist?)>
+<!ATTLIST controlflow
+	level (high | medium | low) #REQUIRED
+>
+<!ELEMENT removal (option*, triggerlist?, conditionalincludes?)>
+<!ELEMENT triggerlist (type | namespace | module | assembly)*>
+<!ELEMENT stringencrypt (option*, includelist?)>
+<!ELEMENT conditionalincludes (type | namespace | module | assembly)*>

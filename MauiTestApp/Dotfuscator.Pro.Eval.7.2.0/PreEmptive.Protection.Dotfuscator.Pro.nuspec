@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd">
+  <metadata minClientVersion="2.5">
+    <id>PreEmptive.Protection.Dotfuscator.Pro</id>
+    <version>7.2.0-releases-7.2.6</version>
+    <authors>PreEmptive Solutions</authors>
+    <owners>PreEmptive Solutions</owners>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="file">LICENSE.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <projectUrl>https://www.preemptive.com/products/dotfuscator/overview</projectUrl>
+    <iconUrl>https://s.gravatar.com/avatar/cba41de9768e54a748aecb16dd4b378c</iconUrl>
+    <description>Protect your .NET Core, Xamarin, and .NET Framework code from decompilation, theft, tampering, debugging, and more with professional-strength obfuscation and automatically-injected runtime checks.
+
+Find the documentation at https://www.preemptive.com/dotfuscator/pro/userguide/en/index.html.
+
+Learn more at https://www.preemptive.com/products/dotfuscator/overview.</description>
+    <releaseNotes>https://www.preemptive.com/support/dotfuscator-support/dotfuscator-pro-change-log</releaseNotes>
+    <copyright>Copyright PreEmptive 2024</copyright>
+  </metadata>
+</package>

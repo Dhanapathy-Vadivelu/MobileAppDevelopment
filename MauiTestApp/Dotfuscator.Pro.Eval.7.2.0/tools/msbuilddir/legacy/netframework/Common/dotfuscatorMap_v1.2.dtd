@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!ELEMENT dotfuscatorMap (header, mapping, statistics)>
+<!ATTLIST dotfuscatorMap
+	version CDATA #REQUIRED
+>
+<!ELEMENT header (timestamp, product)>
+<!ELEMENT timestamp (#PCDATA)>
+<!ELEMENT product (#PCDATA)>
+<!ATTLIST product
+	version CDATA #REQUIRED
+	user CDATA #IMPLIED
+	serial CDATA #IMPLIED
+>
+<!ELEMENT field (signature, name, newmodule?, newname?)>
+<!ELEMENT fieldlist (field*)>
+<!ELEMENT method (arity?, signature?, name, newmodule?, newname?)>
+<!ELEMENT methodlist (method*)>
+<!ELEMENT property (signature, name, newmodule?, newname?)>
+<!ELEMENT propertylist (property*)>
+<!ELEMENT event (signature, name, newmodule?, newname?)>
+<!ELEMENT eventlist (event*)>
+<!ELEMENT mapping (module*)>
+<!ELEMENT module (name, methodlist?, fieldlist?, propertylist?, eventlist?, type*)>
+<!ELEMENT arity (#PCDATA)>
+<!ELEMENT genericparameter ( name, newname? )>
+<!ATTLIST genericparameter 
+	sequence CDATA #REQUIRED
+>	
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT newname (#PCDATA)>
+<!ELEMENT newmodule (#PCDATA)>
+<!ELEMENT signature (#PCDATA)>
+<!ELEMENT type (arity?, genericparameter*, name, newmodule?, newname?, methodlist?, fieldlist?, propertylist?, eventlist?)>
+<!ELEMENT statistics (statisticline*)>
+<!ELEMENT statisticline (description, statistic+)>
+<!ELEMENT description (#PCDATA)>
+<!ELEMENT statistic (#PCDATA)>
