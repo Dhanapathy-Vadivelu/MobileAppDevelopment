@@ -42,7 +42,7 @@
     </excludelist>
     <mapping>
       <mapoutput overwrite="true">
-        <file dir="${configdir}/DotfuscatorReports/${configuration}/${platform}" name="Renaming.xml" />
+        <file dir="${configdir}/DotfuscatorReports/${configuration}/Android/${platform}" name="Renaming.xml" />
       </mapoutput>
     </mapping>
     <referencerulelist>
@@ -68,7 +68,7 @@
   <removal>
     <option>constonly</option>
     <removalreport overwrite="true">
-      <file dir="${configdir}/DotfuscatorReports/${configuration}/${platform}" name="Removal.xml" />
+      <file dir="${configdir}/DotfuscatorReports/${configuration}/Android/${platform}" name="Removal.xml" />
     </removalreport>
     <referencerulelist />
   </removal>
@@ -101,7 +101,7 @@
   </extattributes>
   <smartobfuscation>
     <smartobfuscationreport verbosity="all" overwrite="true">
-      <file dir="${configdir}/DotfuscatorReports/${configuration}/${platform}" name="SmartObfuscation.xml" />
+      <file dir="${configdir}/DotfuscatorReports/${configuration}/Android/${platform}" name="SmartObfuscation.xml" />
     </smartobfuscationreport>
   </smartobfuscation>
 </dotfuscator>
